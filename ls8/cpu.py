@@ -7,6 +7,12 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
+        self.ram = [0] * 256
+
+        # Program counter
+        # PC stores the address of the currently executing instruction
+        # the index into the array of the currently executing instruction
+        self.PC = [0]
         pass
 
     def load(self):
@@ -62,4 +68,78 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        pass
+        #starts at 0
+        self.PC = 0
+
+
+
+        operand_a = self.ram_read(self.PC+1)
+        operand_b = self.ram_read(self.PC+2)
+
+        # dpending on the value of the opcode
+        # perform the actions needed for the instruction
+        while self.PC < 8:
+
+            #instruction register
+            IR = self.ram[self.PC]
+
+            #if ...._
+
+            #elif ......
+
+            #else ....
+
+            #if HLT:
+            if IR == 0b00000001:
+                print("IR!!!")
+                exit()
+
+            elif IR == 130:
+                #Set the value of a register to an integer.
+                print("INT")
+
+            elif IR == 0b01000111:
+                print("PRN")
+
+            
+
+            print(IR)
+            print(type(IR))
+
+            print(IR == 130)
+
+
+
+            # somehow this doesn't work
+
+
+            #elif LDI\
+            #`LDI register immediate`
+            #Machine code:
+            ###```
+            #10000010 00000rrr iiiiiiii
+               # 82 0r ii
+            
+
+            #elif PRN`
+
+
+            
+
+            ## after running the instructions, 
+            ## PC is updates to point at next instruction
+            self.PC += 1
+            #print(self.PC)
+
+            #The number of bytes an instruction uses can be determined from the two high bits (bits 6-7)
+            #  of the instruction opcode. See the LS-8 spec for details.
+
+    def ram_read(self, address):
+        return self.ram[address]
+        #pass
+
+    def ram_write(self, value, address):
+        self.ram[address] = value
+        #pass
+
+
