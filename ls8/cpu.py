@@ -13,7 +13,8 @@ class CPU:
         # PC stores the address of the currently executing instruction
         # the index into the array of the currently executing instruction
         self.PC = [0]
-        pass
+        self.general_purpose_register = [0] * 8
+        #pass
 
     def load(self):
         """Load a program into memory."""
@@ -73,57 +74,35 @@ class CPU:
 
 
 
-        operand_a = self.ram_read(self.PC+1)
-        operand_b = self.ram_read(self.PC+2)
+
 
         # dpending on the value of the opcode
         # perform the actions needed for the instruction
         while self.PC < 8:
 
+            operand_a = self.ram_read(self.PC+1)
+            operand_b = self.ram_read(self.PC+2)
+
             #instruction register
             IR = self.ram[self.PC]
 
-            #if ...._
-
-            #elif ......
-
-            #else ....
-
             #if HLT:
             if IR == 0b00000001:
-                print("IR!!!")
+                # print("HLT!!!")
                 exit()
 
-            elif IR == 130:
+            #elif LDI
+            elif IR == 0b10000010:
                 #Set the value of a register to an integer.
-                print("INT")
+                # print("LDI")
+                #IR = int(IR)
+                self.general_purpose_register[operand_a] = operand_b
 
-            elif IR == 0b01000111:
-                print("PRN")
-
-            
-
-            print(IR)
-            print(type(IR))
-
-            print(IR == 130)
-
-
-
-            # somehow this doesn't work
-
-
-            #elif LDI\
-            #`LDI register immediate`
-            #Machine code:
-            ###```
-            #10000010 00000rrr iiiiiiii
-               # 82 0r ii
-            
 
             #elif PRN`
-
-
+            elif IR == 0b01000111:
+                # print("PRN")
+                print(self.general_purpose_register[operand_a])
             
 
             ## after running the instructions, 
@@ -136,10 +115,8 @@ class CPU:
 
     def ram_read(self, address):
         return self.ram[address]
-        #pass
 
     def ram_write(self, value, address):
         self.ram[address] = value
-        #pass
 
 
