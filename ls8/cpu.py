@@ -2,18 +2,15 @@
 ### WILL'S SUPER DOPE LS-8 COMPUTER
 import sys
 
-
 #Opcodes
-
 HLT = 0b00000001
 LDI = 0b10000010
 PRN = 0b01000111
 MUL = 0b10100010
-
-
+PUSH = 0b01000101
+POP = 0b01000110
 class CPU:
     """Main CPU class."""
-
     def __init__(self):
         """Construct a new CPU."""
 
@@ -22,32 +19,74 @@ class CPU:
         # Program counter: PC stores the address of the currently executing instruction
         self.PC = 0
         self.halted = False
-
+        self.stack_pointer = 7
+        #Branch Table initialization
         self.branchtable = {}
         self.branchtable[HLT] = self.handle_HLT
         self.branchtable[LDI] = self.handle_LDI
         self.branchtable[PRN] = self.handle_PRN
         self.branchtable[MUL] = self.handle_MUL
+        self.branchtable[PUSH] = self.handle_PUSH
+        self.branchtable[POP] = self.handle_POP
 
-    def handle_HLT(self, IR):
+    def handle_HLT(self, IR, operand_a, operand_b):
         if IR == HLT:
             self.halted = True
-                #print("HLT!!!")
 
-    def handle_LDI(self, operand_a, operand_b):
+    #Set the value of a register to an integer.
+    def handle_LDI(self, IR, operand_a, operand_b):
         self.general_purpose_register[operand_a] = operand_b
+        # print("LDI")
+        #print(self.general_purpose_register)
 
-
-    def handle_PRN(self, operand_a, operand_b=None):
+    def handle_PRN(self, IR, operand_a, operand_b=None):
         print(self.general_purpose_register[operand_a])
 
-    def handle_MUL(self, operand_a, operand_b):
+    def handle_MUL(self, IR, operand_a, operand_b):
         self.alu(op="MUL", reg_a=operand_a, reg_b=operand_b)
 
+    def handle_PUSH(self, IR, operand_a, operand_b=None):
+        # print("PUSH")
+        # register_index = self.ram[operand_a]
+        # print(f'REGISTER INDEX {register_index}')
+        value = self.general_purpose_register[operand_a]
+        #print(f'VALUE: {value}')
+        # print(f'Operand A {operand_a}')
+
+        # print(f'IR {IR}')
+    
+        #decrement stack pointer
+        self.general_purpose_register[self.stack_pointer] -= 1
+        #insert value onto stack
+        self.ram[self.general_purpose_register[self.stack_pointer]] = value
+
+        # print(self.ram)
+        # print(self.general_purpose_register)
+
+    def handle_POP(self, IR, operand_a, operand_b=None):
+        # print("POP")
+        #value is grabbed from where the stack pointer is pointing in the RAM
+        value = self.ram[self.general_purpose_register[self.stack_pointer]]
+
+        #increment stack pointer
+        self.general_purpose_register[self.stack_pointer] += 1
+
+        self.general_purpose_register[operand_a] = value
+
+        # print(self.ram)
+        # print(self.general_purpose_register)
+
+
+
+
+    def ram_read(self, address):
+        return self.ram[address]
+
+    def ram_write(self, value, address):
+        self.ram[address] = value
 
     def load(self):
         """Load a program into memory."""
-
         address = 0
         #Bonus: check to make sure the user has put a command line argument where you expect,
         #  and print an error and exit if they didn't.
@@ -104,82 +143,21 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        #print(f'RAM: {self.ram}')
-        #print(f'General Purpose Register: {self.general_purpose_register}')
 
+        # print(f'RAM: {self.ram}')
+ 
 
-        # dpending on the value of the opcode
-        # perform the actions needed for the instruction
         while not self.halted:
-            #print(f'PC: {self.PC}')
-            # print(f'RAM: {self.ram}')
-            # print(f'General Purpose Register: {self.general_purpose_register}')
-
-
-            operand_a = self.ram_read(self.PC+1)
-            operand_b = self.ram_read(self.PC+2)
-
             #instruction register
             IR = self.ram[self.PC]
-            #print(IR)
-
-            '''
-            I need to understand this part better- what is the '&' sign doing?
-            '''
-
+            operand_a = self.ram_read(self.PC+1)
+            operand_b = self.ram_read(self.PC+2)
+            #I need to understand this part better- what is the '&' sign doing?
             instruction_length = ((IR >> 6) & 0b11) + 1
-            #print(instruction_length)
-            #print(IR >> 6)
-            #print(IR)
-            #print(0b11)
-
 
             if IR in self.branchtable:
-                print("FOUND IT")
-                if IR == HLT:
-                    #print("HLT")
-                    self.branchtable[IR](IR)
-                else:
-                    self.branchtable[IR](operand_a, operand_b)
-                #print(self.branchtable[IR])
+                self.branchtable[IR](IR, operand_a, operand_b)
 
-            #if HLT:
-            # if IR == HLT:
-            #     self.halted = True
-            #     #print("HLT!!!")
-                
-            # elif IR == LDI:
-            #     #Set the value of a register to an integer.
-            #     #print("LDI")
-            #     #IR = int(IR)
-            #     self.general_purpose_register[operand_a] = operand_b
-            #     #self.PC += 2
-            #     #print(self.general_purpose_register)
-
-
-            # #elif PRN`
-            # elif IR == PRN:
-            #     #print("PRN")
-            #     print(self.general_purpose_register[operand_a])
-            #     #self.PC += 1
-            
-            # elif IR == MUL:
-            #     #print("MUL")
-            #     self.alu(op="MUL", reg_a=operand_a, reg_b=operand_b)
-            #     #self.PC += 2
-            
-            ## after running the instructions, 
-            ## PC is updates to point at next instruction
+            ## after running the instructions, PC is updates to point at next instruction
             self.PC += instruction_length
-            #print(self.PC)
-
-            #The number of bytes an instruction uses can be determined from the two high bits (bits 6-7)
-            #  of the instruction opcode. See the LS-8 spec for details.
-
-    def ram_read(self, address):
-        return self.ram[address]
-
-    def ram_write(self, value, address):
-        self.ram[address] = value
-
-
+            #print(f'REGISTER: {self.general_purpose_register}')
