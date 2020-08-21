@@ -10,7 +10,13 @@ Your finished project must include all of the following requirements:
 
 [X] Add the JEQ instructions.
 
-[ ] Add JNE 
+[X] Add JNE 
+
+stretch goals:
+[ ] Add the ALU operations: AND OR XOR NOT SHL SHR MOD
+[ ] Add an ADDI extension instruction to add an immediate value to a register
+[ ] Add timer interrupts
+[ ] Add keyboard interrupts
 '''
 ### WILL'S SUPER DOPE LS-8 COMPUTER
 import sys
@@ -29,6 +35,9 @@ CMP = 0b10100111
 JMP = 0b01010100
 JEQ = 0b01010101
 JNE = 0b01010110
+ST = 0b10000100
+PRA = 0b01001000
+IRET = 0b00010011
 class CPU:
     """Main CPU class."""
     def __init__(self):
@@ -57,6 +66,9 @@ class CPU:
         self.branchtable[JMP] = self.handle_JMP
         self.branchtable[JEQ] = self.handle_JEQ
         self.branchtable[JNE] = self.handle_JNE
+        self.branchtable[ST] = self.handle_ST
+        self.branchtable[PRA] = self.handle_PRA
+        self.branchtable[IRET] = self.handle_IRET
 
     def handle_HLT(self, IR, operand_a, operand_b):
         print("handle HLT")
@@ -187,6 +199,42 @@ class CPU:
             self.PC += instruction_length
         # print(self.PC)
 
+    def handle_ST(self, IR, operand_a, operand_b):
+        '''
+        Store value in registerB in the address stored in registerA.
+        This opcode writes to memory.
+        '''
+        print("handle ST")
+        self.ram[self.general_purpose_register[operand_a]] = self.general_purpose_register[operand_b]
+
+    def handle_PRA(self, IR, operand_a, operand_b):
+        '''
+        Print alpha character value stored in the given register.
+        Print to the console the ASCII character corresponding to the value in the register.
+        '''
+        print("handle PRA")
+        print(self.general_purpose_register[operand_a])
+
+    def handle_IRET(self, IR, operand_a, operand_b):
+        '''
+        Return from an interrupt handler.
+        The following steps are executed:       
+        Registers R6-R0 are popped off the stack in that order.
+        The FL register is popped off the stack.
+        The return address is popped off the stack and stored in PC.
+        Interrupts are re-enabled
+        '''
+
+        print("handle IRET")
+
+        self.PC = self.ram[-8]
+
+        # value = self.ram[self.general_purpose_register[self.stack_pointer]]
+        # #increment stack pointer
+        # self.general_purpose_register[self.stack_pointer] += 1
+        # #put the value back on the register
+        # self.general_purpose_register[operand_a] = value
+
     def ram_read(self, address):
         return self.ram[address]
 
@@ -264,7 +312,8 @@ class CPU:
                 self.branchtable[IR](IR, operand_a, operand_b)
 
             ## after running the instructions, PC is updates to point at next instruction
-            unusual_commands = [CALL, RET, JMP, JEQ, JNE]
+            unusual_commands = [CALL, RET, JMP, JEQ, JNE, IRET]
             if IR not in unusual_commands:
                 self.PC += instruction_length
             # print(f'GENERAL REGISTER: {self.general_purpose_register}')
+            # print(f'RAM: {self.ram}')
