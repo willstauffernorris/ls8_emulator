@@ -1,4 +1,17 @@
 """CPU functionality."""
+
+'''
+Minimum Viable Product
+Your finished project must include all of the following requirements:
+
+[X] Add the CMP instruction and equal flag to your LS-8.
+
+[X] Add the JMP instruction.
+
+[X] Add the JEQ instructions.
+
+[ ] Add JNE 
+'''
 ### WILL'S SUPER DOPE LS-8 COMPUTER
 import sys
 
@@ -12,6 +25,10 @@ POP = 0b01000110
 CALL = 0b01010000
 RET = 0b00010001
 ADD = 0b10100000
+CMP = 0b10100111
+JMP = 0b01010100
+JEQ = 0b01010101
+JNE = 0b01010110
 class CPU:
     """Main CPU class."""
     def __init__(self):
@@ -23,6 +40,8 @@ class CPU:
         self.PC = 0
         self.halted = False
         self.stack_pointer = 7
+        self.flag_register = [0] * 8
+       
         #Branch Table initialization
         self.branchtable = {}
         self.branchtable[HLT] = self.handle_HLT
@@ -34,6 +53,10 @@ class CPU:
         self.branchtable[CALL] = self.handle_CALL
         self.branchtable[RET] = self.handle_RET
         self.branchtable[ADD] = self.handle_ADD
+        self.branchtable[CMP] = self.handle_CMP
+        self.branchtable[JMP] = self.handle_JMP
+        self.branchtable[JEQ] = self.handle_JEQ
+        self.branchtable[JNE] = self.handle_JNE
 
     def handle_HLT(self, IR, operand_a, operand_b):
         print("handle HLT")
@@ -43,10 +66,7 @@ class CPU:
     #Set the value of a register to an integer.
     def handle_LDI(self, IR, operand_a, operand_b):
         print("handle LDI")
-
         self.general_purpose_register[operand_a] = operand_b
-        # print("LDI")
-        #print(self.general_purpose_register)
 
     def handle_PRN(self, IR, operand_a, operand_b=None):
         print("handle PRN")
@@ -62,63 +82,109 @@ class CPU:
 
     def handle_PUSH(self, IR, operand_a, operand_b=None):
         print("handle PUSH")
-        # print("PUSH")
-        # register_index = self.ram[operand_a]
-        # print(f'REGISTER INDEX {register_index}')
-        print(self.general_purpose_register)
-        print(operand_a)
         value = self.general_purpose_register[operand_a]
-        #print(f'VALUE: {value}')
-        # print(f'Operand A {operand_a}')
-
-        # print(f'IR {IR}')
-    
         #decrement stack pointer
         self.general_purpose_register[self.stack_pointer] -= 1
         #insert value onto stack
         self.ram[self.general_purpose_register[self.stack_pointer]] = value
 
-        # print(self.ram)
-        # print(self.general_purpose_register)
-
     def handle_POP(self, IR, operand_a, operand_b=None):
         print("handle POP")
-        # print("POP")
         #value is grabbed from where the stack pointer is pointing in the RAM
         value = self.ram[self.general_purpose_register[self.stack_pointer]]
-
         #increment stack pointer
         self.general_purpose_register[self.stack_pointer] += 1
-
+        #put the value back on the register
         self.general_purpose_register[operand_a] = value
-
-        # print(self.ram)
-        # print(self.general_purpose_register)
 
     def handle_CALL(self, IR, operand_a, operand_b=None):
         print("handle CALL")
+
+        #decrement stack pointer
+        self.general_purpose_register[self.stack_pointer] -= 1
         # The address of the instruction directly after CALL is pushed onto the stack.
         # This allows us to return to where we left off when the subroutine finishes executing.
-        # print("operand")
-        # print(operand_a)
-        #insert value onto stack
-        self.general_purpose_register[self.stack_pointer] -= 1
         self.ram[self.general_purpose_register[self.stack_pointer]] = self.PC+2
-
-        # print(self.ram)
-
         # The PC is set to the address stored in the given register.
         # We jump to that location in RAM and execute the first instruction in the subroutine. 
         # The PC can move forward or backwards from its current location.
-
         self.PC = self.general_purpose_register[operand_a]
-        # self.PC = self.ram[self.ram[self.general_purpose_register[self.stack_pointer]]]
-        # print(self.PC)
 
     def handle_RET(self, IR, operand_a, operand_b):
         print("handle RET")
+        # the PC is set to the value saved in the stack
         self.PC = self.ram[self.general_purpose_register[self.stack_pointer]]
+        #increment stack pointer
         self.general_purpose_register[self.stack_pointer] += 1
+        # print(self.PC)
+
+    def handle_CMP(self, IR, operand_a, operand_b):
+        '''
+        Compare the values in two registers.
+        If they are equal, set the Equal E flag to 1, otherwise set it to 0.
+        If registerA is less than registerB, set the Less-than L flag to 1, otherwise set it to 0.
+        If registerA is greater than registerB, set the Greater-than G flag to 1, otherwise set it to 0.
+        
+        FL bits: 00000LGE
+        L Less-than: during a CMP, set to 1 if registerA is less than registerB, zero otherwise.
+        G Greater-than: during a CMP, set to 1 if registerA is greater than registerB, zero otherwise.
+        E Equal: during a CMP, set to 1 if registerA is equal to registerB, zero otherwise.        
+        '''
+        print("handle CMP")
+        reg_A = self.general_purpose_register[operand_a]
+        reg_B = self.general_purpose_register[operand_b]
+
+        #this resets the flag register to all 0s
+        self.flag_register = [0] * 8
+        # logic handling
+        if reg_A == reg_B:
+            self.flag_register[-1] = 1
+        if reg_A < reg_B:
+            self.flag_register[-3] = 1
+        if reg_A > reg_B:
+            self.flag_register[-2] = 1
+
+        # print(f'FLAG REGISTER: {self.flag_register}')
+
+    def handle_JMP(self, IR, operand_a, operand_b):
+        '''
+        Jump to the address stored in the given register.
+        Set the PC to the address stored in the given register.
+        '''
+        print("handle JMP")
+        # print(self.general_purpose_register)
+        self.PC = self.general_purpose_register[operand_a]
+        # print(self.PC)
+
+    def handle_JEQ(self, IR, operand_a, operand_b):
+        '''
+        If equal flag is set (true), jump to the address stored in the given register.
+        '''
+        print("handle JEQ")
+
+        # print(self.flag_register)
+
+        if self.flag_register[-1] == 1:
+            # print("JUMPING!")
+            self.PC = self.general_purpose_register[operand_a]
+        else:
+            IR = self.ram[self.PC]
+            instruction_length = ((IR >> 6) & 0b11) + 1
+            self.PC += instruction_length
+
+    def handle_JNE(self, IR, operand_a, operand_b):
+        '''
+        If `E` flag is clear (false, 0), jump to the address stored in the given register.
+        '''
+        print("handle JNE")
+        # print(self.general_purpose_register)
+        if self.flag_register[-1] == 0:
+            self.PC = self.general_purpose_register[operand_a]
+            # print(self.PC)
+        else:
+            IR = self.ram[self.PC]
+            instruction_length = ((IR >> 6) & 0b11) + 1
+            self.PC += instruction_length
         # print(self.PC)
 
     def ram_read(self, address):
@@ -186,9 +252,6 @@ class CPU:
     def run(self):
         """Run the CPU."""
 
-        # print(f'RAM: {self.ram}')
- 
-
         while not self.halted:
             #instruction register
             IR = self.ram[self.PC]
@@ -201,9 +264,7 @@ class CPU:
                 self.branchtable[IR](IR, operand_a, operand_b)
 
             ## after running the instructions, PC is updates to point at next instruction
-            # print(IR)
-
-            unusual_commands = [CALL, RET]
+            unusual_commands = [CALL, RET, JMP, JEQ, JNE]
             if IR not in unusual_commands:
                 self.PC += instruction_length
-            # print(f'REGISTER: {self.general_purpose_register}')
+            # print(f'GENERAL REGISTER: {self.general_purpose_register}')
