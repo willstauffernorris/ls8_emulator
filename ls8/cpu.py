@@ -9,6 +9,9 @@ PRN = 0b01000111
 MUL = 0b10100010
 PUSH = 0b01000101
 POP = 0b01000110
+CALL = 0b01010000
+RET = 0b00010001
+ADD = 0b10100000
 class CPU:
     """Main CPU class."""
     def __init__(self):
@@ -28,27 +31,42 @@ class CPU:
         self.branchtable[MUL] = self.handle_MUL
         self.branchtable[PUSH] = self.handle_PUSH
         self.branchtable[POP] = self.handle_POP
+        self.branchtable[CALL] = self.handle_CALL
+        self.branchtable[RET] = self.handle_RET
+        self.branchtable[ADD] = self.handle_ADD
 
     def handle_HLT(self, IR, operand_a, operand_b):
+        print("handle HLT")
         if IR == HLT:
             self.halted = True
 
     #Set the value of a register to an integer.
     def handle_LDI(self, IR, operand_a, operand_b):
+        print("handle LDI")
+
         self.general_purpose_register[operand_a] = operand_b
         # print("LDI")
         #print(self.general_purpose_register)
 
     def handle_PRN(self, IR, operand_a, operand_b=None):
+        print("handle PRN")
         print(self.general_purpose_register[operand_a])
 
+    def handle_ADD(self, IR, operand_a, operand_b):
+        print("handle ADD")
+        self.alu(op="ADD", reg_a=operand_a, reg_b=operand_b)
+
     def handle_MUL(self, IR, operand_a, operand_b):
+        print("handle MUL")
         self.alu(op="MUL", reg_a=operand_a, reg_b=operand_b)
 
     def handle_PUSH(self, IR, operand_a, operand_b=None):
+        print("handle PUSH")
         # print("PUSH")
         # register_index = self.ram[operand_a]
         # print(f'REGISTER INDEX {register_index}')
+        print(self.general_purpose_register)
+        print(operand_a)
         value = self.general_purpose_register[operand_a]
         #print(f'VALUE: {value}')
         # print(f'Operand A {operand_a}')
@@ -64,6 +82,7 @@ class CPU:
         # print(self.general_purpose_register)
 
     def handle_POP(self, IR, operand_a, operand_b=None):
+        print("handle POP")
         # print("POP")
         #value is grabbed from where the stack pointer is pointing in the RAM
         value = self.ram[self.general_purpose_register[self.stack_pointer]]
@@ -76,8 +95,31 @@ class CPU:
         # print(self.ram)
         # print(self.general_purpose_register)
 
+    def handle_CALL(self, IR, operand_a, operand_b=None):
+        print("handle CALL")
+        # The address of the instruction directly after CALL is pushed onto the stack.
+        # This allows us to return to where we left off when the subroutine finishes executing.
+        # print("operand")
+        # print(operand_a)
+        #insert value onto stack
+        self.general_purpose_register[self.stack_pointer] -= 1
+        self.ram[self.general_purpose_register[self.stack_pointer]] = self.PC+2
 
+        # print(self.ram)
 
+        # The PC is set to the address stored in the given register.
+        # We jump to that location in RAM and execute the first instruction in the subroutine. 
+        # The PC can move forward or backwards from its current location.
+
+        self.PC = self.general_purpose_register[operand_a]
+        # self.PC = self.ram[self.ram[self.general_purpose_register[self.stack_pointer]]]
+        # print(self.PC)
+
+    def handle_RET(self, IR, operand_a, operand_b):
+        print("handle RET")
+        self.PC = self.ram[self.general_purpose_register[self.stack_pointer]]
+        self.general_purpose_register[self.stack_pointer] += 1
+        # print(self.PC)
 
     def ram_read(self, address):
         return self.ram[address]
@@ -159,5 +201,9 @@ class CPU:
                 self.branchtable[IR](IR, operand_a, operand_b)
 
             ## after running the instructions, PC is updates to point at next instruction
-            self.PC += instruction_length
-            #print(f'REGISTER: {self.general_purpose_register}')
+            # print(IR)
+
+            unusual_commands = [CALL, RET]
+            if IR not in unusual_commands:
+                self.PC += instruction_length
+            # print(f'REGISTER: {self.general_purpose_register}')
